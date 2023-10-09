@@ -9,10 +9,13 @@ type apiHandler struct{}
 func (apiHandler) ServeHTTP(http.ResponseWriter, *http.Request) {}
 
 func main() {
+	const filepath = "."
+	const httpPort = "8080"
 	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.Dir(filepath)))
 	corsMux := middlewareCors(mux)
 
-	http.ListenAndServe(":8080", corsMux)
+	http.ListenAndServe(httpPort, corsMux)
 }
 
 func middlewareCors(next http.Handler) http.Handler {
