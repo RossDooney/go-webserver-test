@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type apiConfig struct {
@@ -50,9 +51,10 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	body := "Hits: " + strconv.Itoa(cfg.fileserverHits)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(http.StatusText(http.StatusOK)))
+	fmt.Fprint(w, body)
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
