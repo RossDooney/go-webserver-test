@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 type apiConfig struct {
@@ -16,19 +14,26 @@ type apiConfig struct {
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
-	r := chi.NewRouter()
-	cfg := &apiConfig{
+
+	apiCfg := apiConfig{
 		fileserverHits: 0,
 	}
 
-	handle := http.FileServer((http.Dir(filepathRoot)))
-	r.Handle("/app", http.StripPrefix("/app", cfg.middlewareMetricsInc(handle)))
-	r.Handle("/app/*", http.StripPrefix("/app", cfg.middlewareMetricsInc(handle)))
-	r.Get("/api/healthz", handlerReadiness)
-	r.HandleFunc("/api/reset", cfg.handlerReset)
-	r.Get("/api/metrics", cfg.handlerMetrics)
+	router := chi.NewRouter()
+	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	router.Handle("/app", fsHandler)
+	router.Handle("/app/*", fsHandler)
 
-	corsMux := middlewareCors(r)
+	apiRouter := chi.NewRouter()
+	apiRouter.Get("/healthz", handlerReadiness)
+	apiRouter.Get("/reset", apiCfg.handlerReset)
+	router.Mount("/api", apiRouter)
+
+	adminRouter := chi.NewRouter()
+	adminRouter.Get("/metrics", apiCfg.handlerMetrics)
+	router.Mount("/admin", adminRouter)
+
+	corsMux := middlewareCors(router)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
@@ -37,32 +42,4 @@ func main() {
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
 	log.Fatal(srv.ListenAndServe())
-}
-
-func handlerReadiness(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
-}
-
-func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
-	cfg.fileserverHits = 0
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
-}
-
-func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
-	body := "Hits: " + strconv.Itoa(cfg.fileserverHits)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
-	fmt.Fprint(w, body)
-}
-
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits++
-		fmt.Printf("%v \n", cfg.fileserverHits)
-		next.ServeHTTP(w, r)
-	})
 }
