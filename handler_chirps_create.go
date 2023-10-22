@@ -38,8 +38,8 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 	}
 
 	respondWithJSON(w, http.StatusCreated, Chirp{
-		ID:   chirp.ID,
 		Body: chirp.Body,
+		ID:   chirp.ID,
 	})
 }
 
