@@ -8,8 +8,9 @@ import (
 
 func (cfg *apiConfig) handlerVerifyLogin(w http.ResponseWriter, r *http.Request) {
 	type login struct {
-		Email    string `json:"email"`
 		Password string `json:"password"`
+		Email    string `json:"email"`
+		Expires  int    `json:"expires_in_seconds"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	params := login{}
