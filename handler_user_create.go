@@ -6,9 +6,9 @@ import (
 )
 
 type User struct {
-	ID       int    `json:"id"`
 	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID       int    `json:"id"`
+	Password string `json:"password,omitempty"`
 }
 
 func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request) {

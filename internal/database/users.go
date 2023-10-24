@@ -48,3 +48,26 @@ func (db *DB) GetUser(id int) (User, error) {
 
 	return user, nil
 }
+
+func (db *DB) CheckUserLogin(email string, password string) (User, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	if err != nil {
+		return User{}, err
+	}
+	for _, user := range dbStructure.Users {
+		if email == user.Email {
+			err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
+			if err != nil {
+				return User{}, ErrWrongPassword
+			}
+			return user, nil
+		}
+
+	}
+
+	return User{}, ErrNotExist
+}
