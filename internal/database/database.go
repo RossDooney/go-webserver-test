@@ -8,7 +8,8 @@ import (
 )
 
 var ErrNotExist = errors.New("resource does not exist")
-var ErrWrongPassword = errors.New("Password is incorrect")
+var ErrIncorrectLogin = errors.New("login is incorrect")
+var ErrUsersAlreadyExists = errors.New("user with this login already exists")
 
 type DB struct {
 	path string

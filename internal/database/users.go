@@ -15,6 +15,11 @@ func (db *DB) CreateUser(email string, password string) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
+	checkEmail := db.CheckEmail(email, dbStructure)
+	if len(checkEmail.Email) != 0 {
+		return User{}, ErrUsersAlreadyExists
+	}
+
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
 		return User{}, err
@@ -58,16 +63,23 @@ func (db *DB) CheckUserLogin(email string, password string) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
+	user := db.CheckEmail(email, dbStructure)
+	if len(user.Email) == 0 {
+		return User{}, ErrIncorrectLogin
+	} else {
+		err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
+		if err != nil {
+			return User{}, ErrIncorrectLogin
+		}
+		return user, nil
+	}
+}
+
+func (db *DB) CheckEmail(email string, dbStructure DBStructure) User {
 	for _, user := range dbStructure.Users {
 		if email == user.Email {
-			err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
-			if err != nil {
-				return User{}, ErrWrongPassword
-			}
-			return user, nil
+			return user
 		}
-
 	}
-
-	return User{}, ErrNotExist
+	return User{}
 }
