@@ -2,15 +2,36 @@ package main
 
 import (
 	"RossDooney/go-webserver-test/internal/database"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt"
 )
 
 type apiConfig struct {
 	fileserverHits int
 	DB             *database.DB
+}
+
+func CreateJwt() (string, error) {
+	godotenv.Load()
+	jwtSecret := os.Getenv("JWT_SECRET")
+
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["exp"] = time.Now().Add(time.Hour).Unix()
+	tokenStr, err := token.SignedString(jwtSecret)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+
+	return tokenStr, nil
 }
 
 func main() {
