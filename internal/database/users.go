@@ -40,6 +40,31 @@ func (db *DB) CreateUser(email string, password string) (User, error) {
 	return user, nil
 }
 
+func (db *DB) UpdateUser(email string, password string, id int) (User, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		return User{}, err
+	}
+	user := User{
+		ID:           id,
+		Email:        email,
+		PasswordHash: passwordHash,
+	}
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
 func (db *DB) GetUser(id int) (User, error) {
 	dbStructure, err := db.loadDB()
 	if err != nil {
