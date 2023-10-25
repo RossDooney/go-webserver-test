@@ -12,6 +12,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type validLogin struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+	Token []byte `json:"token"`
+}
+
 func (cfg *apiConfig) handlerVerifyLogin(w http.ResponseWriter, r *http.Request) {
 	type login struct {
 		Password string `json:"password"`
@@ -32,27 +38,27 @@ func (cfg *apiConfig) handlerVerifyLogin(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusUnauthorized, "Couldn't login")
 		return
 	}
-	jwt, err := CreateJwt()
+	jwt, err := CreateJwt(user.ID)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-
-	respondWithJSON(w, http.StatusOK, User{
+	fmt.Println(jwt)
+	respondWithJSON(w, http.StatusOK, validLogin{
 		Email: user.Email,
 		ID:    user.ID,
+		Token: []byte(jwt),
 	})
 }
 
-func CreateJwt() (string, error) {
+func CreateJwt(id int) (string, error) {
 	godotenv.Load()
 	jwtSecret := os.Getenv("JWT_SECRET")
-
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["exp"] = time.Now().Add(time.Hour).Unix()
-	tokenStr, err := token.SignedString(jwtSecret)
-
+	claims["sub"] = string(id)
+	tokenStr, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
 		fmt.Println(err.Error())
 		return "", err
