@@ -2,14 +2,10 @@ package main
 
 import (
 	"RossDooney/go-webserver-test/internal/database"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt"
 )
 
 type apiConfig struct {
@@ -17,26 +13,15 @@ type apiConfig struct {
 	DB             *database.DB
 }
 
-func CreateJwt() (string, error) {
-	godotenv.Load()
-	jwtSecret := os.Getenv("JWT_SECRET")
-
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Hour).Unix()
-	tokenStr, err := token.SignedString(jwtSecret)
-
-	if err != nil {
-		fmt.Println(err.Error())
-		return "", err
-	}
-
-	return tokenStr, nil
-}
-
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
+
+	jwt, err := CreateJwt()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := database.NewDB("database.json")
 	if err != nil {
@@ -60,8 +45,8 @@ func main() {
 	apiRouter.Get("/chirps", apiCfg.handlerChirpsRetrieve)
 	apiRouter.Get("/chirps/{chirpID}", apiCfg.handlerChirpsGet)
 	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
+	apiRouter.Put("/users", apiCfg.handlerUpdateUser)
 	apiRouter.Post("/login", apiCfg.handlerVerifyLogin)
-	apiRouter.Put("/login", apiCfg.handlerVerifyLogin)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()
