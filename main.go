@@ -16,13 +16,6 @@ type apiConfig struct {
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
-
-	jwt, err := CreateJwt()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	db, err := database.NewDB("database.json")
 	if err != nil {
 		log.Fatal(err)
