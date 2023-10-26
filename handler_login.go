@@ -15,15 +15,16 @@ import (
 type validLogin struct {
 	ID    int    `json:"id"`
 	Email string `json:"email"`
-	Token []byte `json:"token"`
+	Token string `json:"token"`
+}
+
+type login struct {
+	Password string `json:"password"`
+	Email    string `json:"email"`
+	Expires  int    `json:"expires_in_seconds"`
 }
 
 func (cfg *apiConfig) handlerVerifyLogin(w http.ResponseWriter, r *http.Request) {
-	type login struct {
-		Password string `json:"password"`
-		Email    string `json:"email"`
-		Expires  int    `json:"expires_in_seconds"`
-	}
 	decoder := json.NewDecoder(r.Body)
 	params := login{}
 	err := decoder.Decode(&params)
@@ -43,11 +44,10 @@ func (cfg *apiConfig) handlerVerifyLogin(w http.ResponseWriter, r *http.Request)
 		log.Fatal(err)
 		return
 	}
-	fmt.Println(jwt)
 	respondWithJSON(w, http.StatusOK, validLogin{
 		Email: user.Email,
 		ID:    user.ID,
-		Token: []byte(jwt),
+		Token: jwt,
 	})
 }
 
@@ -63,6 +63,6 @@ func CreateJwt(id int) (string, error) {
 		fmt.Println(err.Error())
 		return "", err
 	}
-
+	fmt.Println(tokenStr)
 	return tokenStr, nil
 }
