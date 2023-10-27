@@ -12,7 +12,7 @@ import (
 )
 
 type jwtClaim struct {
-	ID     int `json:"id"`
+	Sub    int `json:"sub"`
 	Expiry int `json:"expires"`
 	jwt.StandardClaims
 }
@@ -46,27 +46,19 @@ func (cfg *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if claims, ok := token.Claims.(*jwtClaim); ok && token.Valid {
-		fmt.Printf("%v %v", claims.ID, claims.StandardClaims.Issuer)
+		user, err := cfg.DB.UpdateUser(params.Email, params.Password, claims.Sub)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Couldn't update user")
+			return
+		}
+		fmt.Println(claims.Sub)
+		respondWithJSON(w, http.StatusOK, User{
+			ID:    claims.Sub,
+			Email: user.Email,
+		})
 	} else {
 		fmt.Println(err)
 	}
-
-	if token.Valid {
-		fmt.Println("token valid")
-	} else {
-		fmt.Println("token not valid")
-	}
-
-	user, err := cfg.DB.UpdateUser(params.Email, params.Password, params.ID)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't update user")
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, User{
-		ID:    user.ID,
-		Email: user.Email,
-	})
 
 }
 
