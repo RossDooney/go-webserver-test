@@ -1,59 +1,30 @@
 package database
 
-import (
-	"golang.org/x/crypto/bcrypt"
-)
+import "errors"
 
 type User struct {
-	ID           int    `json:"id"`
-	Email        string `json:"email"`
-	PasswordHash []byte
+	ID             int    `json:"id"`
+	Email          string `json:"email"`
+	HashedPassword string `json:"hashed_password"`
 }
 
-func (db *DB) CreateUser(email string, password string) (User, error) {
+var ErrAlreadyExists = errors.New("already exists")
+
+func (db *DB) CreateUser(email, hashedPassword string) (User, error) {
+	if _, err := db.GetUserByEmail(email); !errors.Is(err, ErrNotExist) {
+		return User{}, ErrAlreadyExists
+	}
+
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
-	checkEmail := db.CheckEmail(email, dbStructure)
-	if len(checkEmail.Email) != 0 {
-		return User{}, ErrUsersAlreadyExists
-	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	if err != nil {
-		return User{}, err
-	}
 	id := len(dbStructure.Users) + 1
 	user := User{
-		ID:           id,
-		Email:        email,
-		PasswordHash: passwordHash,
-	}
-	dbStructure.Users[id] = user
-
-	err = db.writeDB(dbStructure)
-	if err != nil {
-		return User{}, err
-	}
-
-	return user, nil
-}
-
-func (db *DB) UpdateUser(email string, password string, id int) (User, error) {
-	dbStructure, err := db.loadDB()
-	if err != nil {
-		return User{}, err
-	}
-
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	if err != nil {
-		return User{}, err
-	}
-	user := User{
-		ID:           id,
-		Email:        email,
-		PasswordHash: passwordHash,
+		ID:             id,
+		Email:          email,
+		HashedPassword: hashedPassword,
 	}
 	dbStructure.Users[id] = user
 
@@ -79,32 +50,40 @@ func (db *DB) GetUser(id int) (User, error) {
 	return user, nil
 }
 
-func (db *DB) CheckUserLogin(email string, password string) (User, error) {
+func (db *DB) GetUserByEmail(email string) (User, error) {
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
 
+	for _, user := range dbStructure.Users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+
+	return User{}, ErrNotExist
+}
+
+func (db *DB) UpdateUser(id int, email, hashedPassword string) (User, error) {
+	dbStructure, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
-	user := db.CheckEmail(email, dbStructure)
-	if len(user.Email) == 0 {
-		return User{}, ErrIncorrectLogin
-	} else {
-		err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
-		if err != nil {
-			return User{}, ErrIncorrectLogin
-		}
-		return user, nil
-	}
-}
 
-func (db *DB) CheckEmail(email string, dbStructure DBStructure) User {
-	for _, user := range dbStructure.Users {
-		if email == user.Email {
-			return user
-		}
+	user, ok := dbStructure.Users[id]
+	if !ok {
+		return User{}, ErrNotExist
 	}
-	return User{}
+
+	user.Email = email
+	user.HashedPassword = hashedPassword
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
 }

@@ -8,8 +8,6 @@ import (
 )
 
 var ErrNotExist = errors.New("resource does not exist")
-var ErrIncorrectLogin = errors.New("login is incorrect")
-var ErrUsersAlreadyExists = errors.New("user with this login already exists")
 
 type DB struct {
 	path string
@@ -44,6 +42,14 @@ func (db *DB) ensureDB() error {
 		return db.createDB()
 	}
 	return err
+}
+
+func (db *DB) ResetDB() error {
+	err := os.Remove(db.path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return db.ensureDB()
 }
 
 func (db *DB) loadDB() (DBStructure, error) {
