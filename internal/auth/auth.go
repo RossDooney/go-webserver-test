@@ -29,13 +29,13 @@ func CheckPasswordHash(password, hash string) error {
 }
 
 // MakeJWT -
-func MakeJWT(userID int, tokenSecret string) (string, error) {
+func MakeJWT(userID int, tokenSecret string, issuer string, expiry int) (string, error) {
 	signingKey := []byte(tokenSecret)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+		Issuer:    issuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiry) * time.Second)),
 		Subject:   fmt.Sprintf("%d", userID),
 	})
 	return token.SignedString(signingKey)
@@ -51,6 +51,14 @@ func ValidateJWT(tokenString, tokenSecret string) (string, error) {
 	)
 	if err != nil {
 		return "", err
+	}
+
+	userIssuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		return "", err
+	}
+	if userIssuer != "chirpy-access" {
+		return "", errors.New("unauthorized")
 	}
 
 	userIDString, err := token.Claims.GetSubject()
