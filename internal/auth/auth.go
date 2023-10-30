@@ -42,7 +42,7 @@ func MakeJWT(userID int, tokenSecret string, issuer string, expiry int) (string,
 }
 
 // ValidateJWT -
-func ValidateJWT(tokenString, tokenSecret string) (string, error) {
+func ValidateJWT(tokenString, tokenSecret string) (string, string, error) {
 	claimsStruct := jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(
 		tokenString,
@@ -50,23 +50,20 @@ func ValidateJWT(tokenString, tokenSecret string) (string, error) {
 		func(token *jwt.Token) (interface{}, error) { return []byte(tokenSecret), nil },
 	)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	userIssuer, err := token.Claims.GetIssuer()
 	if err != nil {
-		return "", err
-	}
-	if userIssuer != "chirpy-access" {
-		return "", errors.New("unauthorized")
+		return "", "", err
 	}
 
 	userIDString, err := token.Claims.GetSubject()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return userIDString, nil
+	return userIDString, userIssuer, nil
 }
 
 // GetBearerToken -

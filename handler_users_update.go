@@ -3,6 +3,7 @@ package main
 import (
 	"RossDooney/go-webserver-test/internal/auth"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -22,12 +23,16 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	subject, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	subject, issuer, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
 		return
 	}
-
+	if issuer != "chirpy-access" {
+		fmt.Println("not access token")
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
+		return
+	}
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err = decoder.Decode(&params)
