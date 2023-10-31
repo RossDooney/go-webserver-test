@@ -1,6 +1,8 @@
 package database
 
-import "time"
+import (
+	"time"
+)
 
 type RevokeToken struct {
 	ID         string    `json:"id"`
@@ -27,16 +29,16 @@ func (db *DB) CreateRevokeToken(id string) error {
 	return nil
 }
 
-func (db *DB) GetRevokeToken() (RevokeToken, error) {
+func (db *DB) GetRevokeToken(token string) bool {
 	dbStructure, err := db.loadDB()
+
 	if err != nil {
-		return RevokeToken{}, err
+		return false
 	}
 
-	token, ok := dbStructure.RevokeToken[""]
+	_, ok := dbStructure.RevokeToken[token]
 	if !ok {
-		return RevokeToken{}, ErrNotExist
+		return false
 	}
-
-	return token, nil
+	return true
 }

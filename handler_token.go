@@ -25,11 +25,16 @@ func (cfg *apiConfig) handlerRefreshToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if issuer != "chirpy-refresh" {
-		fmt.Println("not access token")
+		fmt.Println("not refresh token")
 		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
 		return
 	}
-	fmt.Println("refresh token submitted")
+	tokenRevoked := cfg.DB.GetRevokeToken(token)
+	if tokenRevoked == true {
+		respondWithError(w, http.StatusUnauthorized, "token Revoked")
+		return
+	}
+
 	userID, err := strconv.Atoi(subject)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't parse user ID")
@@ -56,6 +61,16 @@ func (cfg *apiConfig) handlerRevokeToken(w http.ResponseWriter, r *http.Request)
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't find JWT")
+		return
+	}
+	_, issuer, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
+		return
+	}
+	if issuer != "chirpy-refresh" {
+		fmt.Println("not refresh token")
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
 		return
 	}
 	err = cfg.DB.CreateRevokeToken(token)
