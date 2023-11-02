@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -29,13 +30,16 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.DB.GetChirps()
+	authIDString := r.URL.Query().Get("author_id")
+	authID, err := strconv.Atoi(authIDString)
+	fmt.Printf("auth id: %v \n", authID)
+	dbChirps, err := cfg.DB.GetChirps(authID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps")
 		return
 	}
-
 	chirps := []Chirp{}
+
 	for _, dbChirp := range dbChirps {
 		chirps = append(chirps, Chirp{
 			ID:     dbChirp.ID,
