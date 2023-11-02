@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileserverHits int
 	DB             *database.DB
 	jwtSecret      string
+	apiKey         string
 }
 
 func main() {
@@ -25,7 +26,11 @@ func main() {
 	godotenv.Load(".env")
 
 	jwtSecret := os.Getenv("JWT_SECRET")
+	apiKey := os.Getenv("Apikey")
 	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
+	if apiKey == "" {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
 
@@ -47,6 +52,7 @@ func main() {
 		fileserverHits: 0,
 		DB:             db,
 		jwtSecret:      jwtSecret,
+		apiKey:         apiKey,
 	}
 
 	router := chi.NewRouter()
