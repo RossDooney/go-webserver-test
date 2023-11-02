@@ -31,8 +31,9 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Request) {
 	authIDString := r.URL.Query().Get("author_id")
+	sortString := r.URL.Query().Get("sort")
 	authID, err := strconv.Atoi(authIDString)
-	fmt.Printf("auth id: %v \n", authID)
+	fmt.Printf("auth id: %v \n", sortString)
 	dbChirps, err := cfg.DB.GetChirps(authID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps")
@@ -47,10 +48,14 @@ func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Reque
 			AuthID: dbChirp.AuthID,
 		})
 	}
-
-	sort.Slice(chirps, func(i, j int) bool {
-		return chirps[i].ID < chirps[j].ID
-	})
-
+	if sortString == "asc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].ID < chirps[j].ID
+		})
+	} else if sortString == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].ID > chirps[j].ID
+		})
+	}
 	respondWithJSON(w, http.StatusOK, chirps)
 }
